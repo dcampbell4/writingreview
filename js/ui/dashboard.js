@@ -36,9 +36,9 @@ export function renderDashboard(app) {
           ${rows.map(({ sub, result, student }) => `
             <tr class="row-link" data-href="#/submission/${encodeURIComponent(sub.id)}" tabindex="0">
               <td><a href="#/submission/${encodeURIComponent(sub.id)}">${h(student?.name || 'Unknown')}</a></td>
-              <td>${h(sub.assignment)}${sub.log ? '' : ' <span class="tag" title="No writing-process log">text only</span>'}</td>
+              <td>${h(sub.assignment)}${sub.log ? '' : sub.report ? ' <span class="tag" title="Imported process report">report</span>' : ' <span class="tag" title="No process data">text only</span>'}</td>
               <td>${h(fmtDate(sub.date))}</td>
-              <td class="num">${result.replay ? result.summary.processCount : '<span class="muted" title="No process data">—</span>'}</td>
+              <td class="num">${result.replay || result.report ? result.summary.processCount : '<span class="muted" title="No process data">—</span>'}</td>
               <td class="num">${result.summary.textualCount}</td>
               <td>${sevBadge(result.summary.highest)}</td>
               <td>${statusBadge(result.summary.status)}</td>

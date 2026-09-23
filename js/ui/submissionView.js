@@ -73,7 +73,7 @@ export function renderSubmission(app, id) {
         <div class="card cat ${c.notable ? 'is-notable' : ''}" title="${h(c.description)}">
           <div class="cat-label">${h(c.label)}</div>
           <div class="cat-value">${c.count}</div>
-          <div class="cat-sub">${c.count ? `${c.notable} medium/high · highest ${h(c.highest)}` : c.id === 'process' && !rep ? 'no process data' : c.id === 'baseline' && !baseline ? 'no baseline' : 'none'}</div>
+          <div class="cat-sub">${c.count ? `${c.notable} medium/high · highest ${h(c.highest)}` : c.id === 'process' && !rep && !result.report ? 'no process data' : c.id === 'baseline' && !baseline ? 'no baseline' : 'none'}</div>
         </div>`).join('')}
     </section>
 
@@ -120,7 +120,7 @@ export function renderSubmission(app, id) {
           <div id="tl-log">${tl.log}</div>` : '<p class="empty">No text events in this log.</p>'}
         </section>
         ${paragraphCard(result)}` : `
-        <section class="card card-pad"><h2>Writing timeline</h2><p class="muted">No writing-process log was provided for this submission, so the timeline and process signals are unavailable. Logs can be recorded with the <a href="capture.html" target="_blank" rel="noopener">writing capture page</a> or imported as JSON (see DESIGN.md §3).</p></section>`}
+        ${result.report ? reportCard(result) : `<section class="card card-pad"><h2>Writing process</h2><p class="muted">No process data was provided for this submission, so process signals are unavailable. Add a process report PDF (e.g. from a Google Docs add-on) or a log from the <a href="capture.html" target="_blank" rel="noopener">writing capture page</a> when adding a submission.</p></section>`}`}
 
         ${baselineCard(result)}
 
@@ -181,6 +181,33 @@ function detailHtml(s, result) {
       <div class="btn-row" style="margin-top:8px"><button class="btn btn-sm" data-action="save-note">Save note</button><span class="small muted">Dismissed signals stay visible but are left out of the status.</span></div>
     </div>
   </div>`;
+}
+
+function reportCard(result) {
+  const r = result.report;
+  const m = r.metrics || {};
+  const labels = { writingMinutes: 'Writing time', sessions: 'Sessions', edits: 'Edits / revisions', pasteCount: 'Pastes', pastedWords: 'Words pasted', pastedChars: 'Characters pasted', totalWords: 'Word count (report)' };
+  const rows = Object.entries(labels).filter(([k]) => m[k] != null)
+    .map(([k, label]) => `<dt>${h(label)}</dt><dd>${k === 'writingMinutes' ? `${fmtNum(m[k], 0)} minutes` : h(String(m[k]))}</dd>`).join('');
+  const pastes = (r.pastes || []).filter((p) => p.include !== false);
+  const pasteSignals = result.signals.filter((s) => s.detector === 'report-paste');
+  const events = [
+    ...(r.sessions || []).filter((s) => s.start).map((s) => ({ t: s.start, label: `Session${s.minutes != null ? ` · ${fmtNum(s.minutes, 0)} min` : ''}`, flag: false })),
+    ...pastes.filter((p) => p.time).map((p) => ({ t: p.time, label: `Paste · ${p.words != null ? `${p.words} words` : p.chars != null ? `${p.chars} characters` : 'size not given'}`, flag: true })),
+  ].sort((a, b) => a.t - b.t);
+  return `<section class="card" aria-label="Imported process report">
+    <div class="card-head"><h2>Imported process report</h2><span class="muted">${h(r.tool)}${r.fileName ? ` · ${h(r.fileName)}` : ''}</span></div>
+    <div class="card-pad">
+      <p class="small muted" style="margin-top:0">Summary figures read from the report and checked when the submission was added. A report is less detailed than a full writing log, so the timeline chart and revision-by-paragraph views are not available.</p>
+      ${rows ? `<dl class="kv">${rows}</dl>` : '<p class="muted">No summary figures were recognised.</p>'}
+      ${events.length ? `<h3 style="margin-top:16px">Activity listed in the report</h3><ul class="eventlog" aria-label="Reported activity">${events.map((e) => `<li><button type="button" disabled style="cursor:default"><span>${h(new Date(e.t).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span><span>${h(new Date(e.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</span><span></span><span class="kind ${e.flag ? 'flag' : ''}">${h(e.label)}</span></button></li>`).join('')}</ul>` : ''}
+      ${pastes.length ? `<h3 style="margin-top:16px">Pastes listed (${pastes.length})</h3><ul class="small">${pastes.map((p, i) => {
+        const sig = pasteSignals.find((s) => s.id === `report-paste-${i}`);
+        return `<li style="margin:6px 0">${p.time ? `${h(new Date(p.time).toLocaleString())} · ` : ''}${p.words != null ? `${p.words} words` : p.chars != null ? `${p.chars} characters` : ''}${sig ? ` ${sevBadge(sig.severity)} <button class="btn btn-sm btn-ghost" data-show-signal="${h(sig.id)}">Show</button>` : ' <span class="muted">(below the paste threshold)</span>'}${p.excerpt ? `<div class="excerpt" style="font-size:14px">${h(p.excerpt.length > 300 ? p.excerpt.slice(0, 299) + '…' : p.excerpt)}</div>` : ''}</li>`;
+      }).join('')}</ul>` : ''}
+      <details style="margin-top:12px"><summary class="small">Show the report's extracted text</summary><pre style="white-space:pre-wrap;font-size:12px;max-height:300px;overflow:auto;background:var(--surface-2);padding:10px;border-radius:6px">${h(r.rawText || '')}</pre></details>
+    </div>
+  </section>`;
 }
 
 function paragraphCard(result) {
@@ -246,6 +273,10 @@ function wire(app, id, result, tl) {
   const rerender = () => renderSubmission(app, id);
   app.querySelectorAll('[data-signal].signal-item').forEach((b) => b.addEventListener('click', () => {
     st.sel = b.dataset.signal; st.mode = 'signal'; rerender();
+  }));
+  app.querySelectorAll('[data-show-signal]').forEach((b) => b.addEventListener('click', () => {
+    st.sel = b.dataset.showSignal; st.mode = 'signal'; rerender();
+    app.querySelector('[aria-label="Signal detail"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
   app.querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => { st.filter = b.dataset.filter; rerender(); }));
   app.querySelector('[data-action="hide-low"]')?.addEventListener('change', (e) => { st.hideLow = e.target.checked; rerender(); });

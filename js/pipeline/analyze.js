@@ -41,10 +41,11 @@ export function analyzeSubmission({ submission, student, samples, config, annota
   const baseline = buildBaseline(samples || [], config);
 
   // 4. Run every detector whose data requirements are met.
-  const ctx = { submission, student, text, doc, processDoc, features, replay: rep, baseline, config };
+  const report = submission.report || null;
+  const ctx = { submission, student, text, doc, processDoc, features, replay: rep, report, baseline, config };
   let signals = [];
   for (const d of DETECTORS) {
-    const missing = (d.requires || []).filter((r) => (r === 'log' && !rep) || (r === 'baseline' && !baseline));
+    const missing = (d.requires || []).filter((r) => (r === 'log' && !rep) || (r === 'report' && !report) || (r === 'baseline' && !baseline));
     if (missing.length) { skipped.push({ id: d.id, name: d.name, missing }); continue; }
     try {
       signals.push(...d.run(ctx).map((s) => ({ ...s, category: s.category || d.category })));
@@ -62,13 +63,13 @@ export function analyzeSubmission({ submission, student, samples, config, annota
   }
   signals.sort((a, b) => sevRank(b.severity) - sevRank(a.severity) || CATEGORIES.findIndex((c) => c.id === a.category) - CATEGORIES.findIndex((c) => c.id === b.category));
 
-  const summary = summarize(signals, { rep, baseline, config, doc });
+  const summary = summarize(signals, { rep, report, baseline, config, doc });
   const comparison = baseline ? compareFeatures(features, baseline, config) : [];
-  return { submission, student, text, doc, features, replay: rep, baseline, signals, summary, comparison, warnings, skipped };
+  return { submission, student, text, doc, features, replay: rep, report, baseline, signals, summary, comparison, warnings, skipped };
 }
 
 // Multi-signal convergence. Counts *categories* with notable signals, never adds up scores.
-export function summarize(signals, { rep, baseline, config, doc }) {
+export function summarize(signals, { rep, report = null, baseline, config, doc }) {
   const active = signals.filter((s) => s.status !== 'dismissed');
   const byCategory = CATEGORIES.map((c) => {
     const list = active.filter((s) => s.category === c.id);
@@ -96,11 +97,14 @@ export function summarize(signals, { rep, baseline, config, doc }) {
   }
 
   const coverage = [];
-  coverage.push(rep ? `Writing-process data: ${plural(rep.textEvents.length, 'editing event')}${rep.matchesSubmission ? '' : ' (does not fully match submitted text)'}` : 'Writing-process data: none (process signals not available)');
+  if (rep) coverage.push(`Writing-process data: ${plural(rep.textEvents.length, 'editing event')}${rep.matchesSubmission ? '' : ' (does not fully match submitted text)'}`);
+  else if (report) coverage.push(`Writing-process data: imported ${report.tool && report.tool !== 'Tool not recognised' ? report.tool + ' ' : ''}report (summary figures and ${plural((report.pastes || []).filter((p) => p.include !== false).length, 'listed paste')}; no keystroke log)`);
+  else coverage.push('Writing-process data: none (process signals not available)');
   coverage.push(baseline ? `Baseline: ${baseline.reliability.toLowerCase()} (${plural(baseline.sampleCount, 'sample')}, ${baseline.totalWords} words${baseline.process ? `, ${plural(baseline.process.count, 'process log')}` : ''})` : 'Baseline: none (comparisons with previous writing not available)');
   coverage.push(`Submission length: ${doc.wordCount} words`);
   const caveats = [];
-  if (!rep && !baseline) caveats.push('With no process data and no baseline, only textual patterns are available. These are weak evidence on their own because many students are taught these structures.');
+  if (report && !rep) caveats.push('Process signals come from an imported report. Its figures were extracted automatically and checked by the teacher; they are less detailed than a full writing log.');
+  if (!rep && !report && !baseline) caveats.push('With no process data and no baseline, only textual patterns are available. These are weak evidence on their own because many students are taught these structures.');
   if (baseline?.reliability === 'Limited') caveats.push('The baseline is limited; deviations are less reliable and have been capped.');
   if (doc.wordCount < config.general.minWordsForRates) caveats.push(`The text is short (${doc.wordCount} words); rate-based textual detectors were not run.`);
 

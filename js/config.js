@@ -82,6 +82,14 @@ export const DEFAULT_CONFIG = {
     vocabMediumRatio: 2,
     vocabHighRatio: 3.5,
   },
+  report: {
+    // Imported process reports (PDF or other tools' exports): summary figures only.
+    pasteShareMedium: 0.25,  // share of final words that entered through pastes
+    pasteShareHigh: 0.5,
+    mediumWpm: 25,           // final words ÷ reported writing minutes
+    highWpm: 40,
+    minWords: 150,
+  },
   summary: {
     reviewMinCategories: 2,
     requireHighForReview: true,
@@ -172,6 +180,13 @@ export const CONFIG_SCHEMA = [
     ['vocabMinCount', 'Minimum new sophisticated words'],
     ['vocabMediumRatio', 'Medium at × expected new-vocabulary rate'],
     ['vocabHighRatio', 'High at × expected new-vocabulary rate'],
+  ]},
+  { section: 'report', title: 'Imported process reports (PDF)', fields: [
+    ['pasteShareMedium', 'Medium when this share of the text was pasted (0–1)'],
+    ['pasteShareHigh', 'High when this share of the text was pasted (0–1)'],
+    ['mediumWpm', 'Medium at final words per reported writing minute'],
+    ['highWpm', 'High at final words per reported writing minute'],
+    ['minWords', 'Minimum words in the submission'],
   ]},
   { section: 'summary', title: 'Overall status', fields: [
     ['reviewMinCategories', 'Categories needed for "Review recommended"'],

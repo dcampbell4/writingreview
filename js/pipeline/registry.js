@@ -1,8 +1,10 @@
 // The detector registry. To add a new signal, write a detector object
 // ({ id, category, name, requires, run(ctx) → Signal[] }) and add it here.
-// `requires` may contain 'log' (writing-process data) and/or 'baseline'.
+// `requires` may contain 'log' (writing-process event log), 'report' (an
+// imported process report such as a PDF) and/or 'baseline'.
 
 import { processDetectors } from '../process/detectors.js';
+import { reportDetectors } from '../process/reportDetectors.js';
 import { textDetectors } from '../text/detectors.js';
 import { baselineDetectors } from '../baseline/baseline.js';
 
@@ -15,4 +17,4 @@ export const CATEGORIES = [
 
 export const TEXTUAL_CATEGORIES = new Set(['style', 'rhetoric', 'baseline']);
 
-export const DETECTORS = [...processDetectors, ...textDetectors, ...baselineDetectors];
+export const DETECTORS = [...processDetectors, ...reportDetectors, ...textDetectors, ...baselineDetectors];

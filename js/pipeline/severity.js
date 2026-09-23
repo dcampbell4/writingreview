@@ -13,7 +13,7 @@ const ACCOMMODATIONS = [
   {
     flag: 'draftsElsewhere',
     label: 'is known to draft in another app and paste in',
-    applies: (s) => ['paste', 'linear-drafting', 'low-revision', 'revision-discontinuity', 'continuous-composition', 'late-polishing'].includes(s.detector),
+    applies: (s) => ['paste', 'report-paste', 'report-paste-share', 'linear-drafting', 'low-revision', 'revision-discontinuity', 'continuous-composition', 'late-polishing'].includes(s.detector),
     cap: (c) => c.accommodations.draftsElsewhereCap,
   },
   {

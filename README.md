@@ -30,8 +30,15 @@ You can reset or clear the demo data under **Settings**.
 ## Using it with real students
 
 1. **Build a baseline.** Under *Students & baselines*, add writing you know the student produced themselves (for example, in-class essays). Three or more samples give an *established* baseline.
-2. **Collect writing-process data (optional but valuable).** Students write in `capture.html`, which records typing, deleting and pasting, and tells students clearly that this is recorded. They download the log and hand it in.
-3. **Add the submission.** Under *Add submission*, attach the log and/or paste the final text.
+2. **Collect writing-process data (optional but valuable).** Either:
+   * **Process report PDF** from a Google Docs add-on (for example Revision History, Process Feedback, Draftback or Brisk). Download the student's report as a PDF.
+   * **Writing capture:** students write in `capture.html`, which records typing, deleting and pasting, and tells students clearly that this is recorded. They download the log (JSON) and hand it in.
+3. **Add the submission.** Under *Add submission*:
+   1. Attach the PDF or JSON file.
+   2. **Check the figures** the app read from it: writing time, sessions, edits and each paste with its excerpt. Correct anything that was misread.
+   3. Paste the student's final text (copy it from the Google Doc), since reports usually contain only excerpts.
+
+   To see how it works, try `examples/sample-process-report.pdf` (fictional).
 4. **Review.**
    * Open the submission.
    * Click each signal to see its observed evidence, the student's baseline, an interpretation, other explanations and the rule that set its severity.
@@ -50,4 +57,7 @@ Everything is stored **only in your browser** (localStorage). Use *Settings → 
 | `js/config.js` | Every threshold (also editable in *Settings*) |
 | `js/text/`, `js/process/`, `js/baseline/` | Detectors, grouped by the kind of evidence they use |
 | `js/pipeline/registry.js` | The list of detectors. Add new signals here. |
+| `js/import/` | Reading PDF process reports and other tools' JSON exports |
+| `vendor/pdfjs/` | PDF reader (Mozilla pdf.js 3.11, Apache 2.0 licence), included so nothing is loaded from other servers |
+| `examples/` | A fictional sample process report PDF |
 | `tests/` | Automated tests (`npm test`, needs Node 18+) |

@@ -117,6 +117,24 @@ Settings   { ...thresholds }           // see config.js
 
 `capture.html` produces this format directly. Adapters for other editors only need to emit these events.
 
+### 3a. Imported process reports (PDF or other JSON)
+
+Many teachers already have **process reports from Google Docs add-ons** (Revision History, Process Feedback, Draftback, Brisk…). These give summary figures and paste excerpts rather than a keystroke log.
+
+* **Reading the file:** PDFs are read in the browser with the bundled pdf.js (`vendor/pdfjs`). An unfamiliar JSON file is flattened into "key: value" lines, and both go through the same tolerant parser (`js/import/processReport.js`). It extracts:
+  * writing time, sessions, edits and pastes (including table-style layouts with a row of labels and a row of values)
+  * each listed paste: its time, size and quoted excerpt
+  * session times
+  * the student and document title
+* **Teacher check:** the teacher **checks and corrects** every extracted figure before analysis. The raw extracted text is always kept and viewable.
+* **Stored as** `Submission.report = { tool, fileName, metrics, pastes[], sessions[], rawText }`.
+* **Report detectors** (`requires: ['report']`):
+  * reported paste: each excerpt is located in the final text so it can be highlighted; quotations are downgraded
+  * share of the text pasted
+  * reported writing time vs length
+* **Limits:** timeline and revision-by-paragraph views need a full event log and are not shown for reports.
+* **JSON import:** it also accepts a list of saved versions (`[{time, text}]`) as snapshots, strips a byte-order mark, and explains clearly what it found when it cannot recognise a file.
+
 ## 4. Detection pipeline
 
 1. **Normalise** the submission and its log. Sort the events, convert times and validate the fields.

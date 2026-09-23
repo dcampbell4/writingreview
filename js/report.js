@@ -58,7 +58,7 @@ export function reportHtml(result, teacherNote = '') {
     <h2>Process signals</h2>
     ${process.length ? `<table><thead><tr><th>Signal</th><th>Finding</th><th>Severity</th></tr></thead><tbody>
       ${process.map((s) => `<tr class="${s.status === 'dismissed' ? 'is-dismissed' : ''}"><td>${h(s.name)}</td><td>${h(s.finding)}</td><td>${h(s.severity)}${s.status === 'dismissed' ? ' (dismissed)' : ''}</td></tr>`).join('')}
-    </tbody></table>` : `<p class="muted">${result.replay ? 'No process signals.' : 'No writing-process data was available for this submission.'}</p>`}
+    </tbody></table>` : `<p class="muted">${result.replay || result.report ? 'No process signals.' : 'No writing-process data was available for this submission.'}</p>`}
 
     <h2>Textual patterns</h2>
     ${textualLines(result).length ? `<ul>${textualLines(result).map((l) => `<li>${h(l)}</li>`).join('')}</ul>` : '<p class="muted">No textual patterns above threshold.</p>'}
@@ -85,7 +85,7 @@ export function reportText(result, teacherNote = '') {
   out.push(summary.text, '', ...summary.coverage.map((c) => `- ${c}`), '');
   out.push('PROCESS SIGNALS');
   const process = signals.filter((s) => s.category === 'process');
-  if (!process.length) out.push(result.replay ? '- None' : '- No writing-process data available');
+  if (!process.length) out.push(result.replay || result.report ? '- None' : '- No writing-process data available');
   process.forEach((s) => out.push(`- ${s.name} [${s.severity}${s.status === 'dismissed' ? ', dismissed' : ''}]: ${s.finding}`));
   out.push('', 'TEXTUAL PATTERNS');
   const t = textualLines(result);

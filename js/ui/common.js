@@ -32,7 +32,7 @@ export function getAnalysis(submissionId) {
     s.status = ann[s.id]?.status || 'open';
     s.note = ann[s.id]?.note || '';
   }
-  entry.result.summary = summarize(entry.result.signals, { rep: entry.result.replay, baseline: entry.result.baseline, config: entry.config, doc: entry.result.doc });
+  entry.result.summary = summarize(entry.result.signals, { rep: entry.result.replay, report: entry.result.report, baseline: entry.result.baseline, config: entry.config, doc: entry.result.doc });
   return entry.result;
 }
 
