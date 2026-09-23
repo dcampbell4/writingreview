@@ -1,0 +1,10 @@
+{
+  "name": "writing-process-review",
+  "private": true,
+  "type": "module",
+  "description": "Teacher decision-support tool for unusual writing-process and textual patterns. Static site: no build step.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "python3 -m http.server 8000"
+  }
+}
