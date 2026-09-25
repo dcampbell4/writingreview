@@ -5,21 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Writing Capture</title>
 <meta name="description" content="A simple writing editor that records the writing process (typing, deleting, pasting) so a teacher can see how a piece of writing developed.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 <style>
   .capture { max-width: 860px; margin: 0 auto; }
-  .capture textarea#editor { min-height: 480px; font: 17px/1.7 Georgia, "Times New Roman", serif; padding: 18px 20px; }
-  .statusbar { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-3); margin-top: 8px; }
+  .capture textarea#editor { min-height: 480px; font: 17px/1.7 var(--serif); padding: 18px 20px; }
+  .statusbar { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-3); margin-top: 8px; }
 </style>
 </head>
 <body>
-<header class="topbar"><div class="topbar-inner"><span class="brand"><span class="brand-mark" aria-hidden="true"></span>Writing Capture</span></div></header>
+<header class="topbar"><div class="topbar-inner"><span class="brand">Writing capture</span></div></header>
 <main class="main capture">
-  <p class="notice notice-info"><strong>Your writing process is recorded.</strong> This editor keeps a log of when text is typed, deleted and pasted, so that your teacher can see how your writing developed. Nothing is sent anywhere automatically: when you finish, download the log and hand it in as your teacher asks.</p>
-  <div class="fields-row" style="margin:16px 0">
+  <p class="notice"><strong>Your writing process is recorded.</strong> This editor keeps a log of when text is typed, deleted and pasted, so that your teacher can see how your writing developed. Nothing is sent anywhere automatically: when you finish, download the log and hand it in as your teacher asks.</p>
+  <div class="fields" style="margin:16px 0">
     <div class="field"><label for="c-name">Your name</label><input type="text" id="c-name"></div>
     <div class="field"><label for="c-assign">Assignment</label><input type="text" id="c-assign"></div>
   </div>
@@ -29,7 +26,7 @@
   <div class="btn-row" style="margin-top:16px">
     <button class="btn btn-primary" id="c-finish">Finish and download log</button>
     <button class="btn" id="c-add" title="For teachers using this device: add directly to the review tool">Add to review tool on this device</button>
-    <button class="btn btn-ghost" id="c-reset">Start over</button>
+    <button class="btn btn-quiet" id="c-reset">Start over</button>
   </div>
 </main>
 <script type="module" src="js/capture.js"></script>

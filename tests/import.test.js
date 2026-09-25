@@ -4,11 +4,7 @@ import assert from 'node:assert/strict';
 
 import { parseProcessReport, locateExcerpt, parseDuration, findTimestamp } from '../js/import/processReport.js';
 import { parseImport } from '../js/schema.js';
-import { analyzeSubmission, STATUS } from '../js/pipeline/analyze.js';
-import { mergeConfig } from '../js/config.js';
-import { buildDemo } from '../js/demo/demoData.js';
-
-const config = mergeConfig();
+import { docxXmlToText } from '../js/import/documents.js';
 
 // Layout A: label and value on separate lines, a "Pasted content" section with quoted excerpts.
 const LAYOUT_A = `Writing Process Report
@@ -86,33 +82,6 @@ test('locates a pasted excerpt in the final text despite line breaks and curly q
   assert.equal(final.slice(r.start, r.end), 'Furthermore, the conch serves as a powerful\nsymbol of civilization');
 });
 
-test('a report-only submission produces process signals linked to the text', () => {
-  const demo = buildDemo();
-  const sam = demo.submissions.find((s) => s.id === 'sub-sam-lotf');
-  const report = parseProcessReport(LAYOUT_A);
-  const sub = { id: 'r1', studentId: 'stu-sam', assignment: 'x', finalText: sam.finalText, log: null, report };
-  const r = analyzeSubmission({ submission: sub, student: {}, samples: demo.samples.filter((s) => s.studentId === 'stu-sam'), config });
-  const paste = r.signals.find((s) => s.id === 'report-paste-0');
-  assert.equal(paste.severity, 'High');
-  assert.ok(paste.ranges.length, 'the pasted excerpt is highlighted in the text');
-  assert.ok(!r.signals.some((s) => s.id === 'report-speed'), '612 words in 72 minutes is an ordinary pace');
-  const fast = analyzeSubmission({ submission: { ...sub, report: { ...report, metrics: { ...report.metrics, writingMinutes: 12 } } }, student: {}, samples: [], config });
-  assert.equal(fast.signals.find((s) => s.id === 'report-speed').severity, 'High', '612 words in 12 minutes is flagged');
-  assert.equal(r.summary.status, STATUS.review);
-  assert.ok(r.summary.coverage[0].includes('imported'));
-  assert.ok(!r.skipped.some((d) => d.id === 'report-paste'));
-});
-
-test('a pasted quotation in a report is downgraded', () => {
-  const demo = buildDemo();
-  const avery = demo.submissions.find((s) => s.id === 'sub-avery-lotf');
-  const report = parseProcessReport(LAYOUT_B);
-  const r = analyzeSubmission({ submission: { id: 'r2', finalText: avery.finalText, report }, student: {}, samples: [], config });
-  const paste = r.signals.find((s) => s.detector === 'report-paste');
-  assert.equal(paste.severity, 'Low');
-  assert.notEqual(r.summary.status, STATUS.review);
-});
-
 test('JSON import is forgiving and explains failures', () => {
   assert.equal(parseImport('﻿{"events":[{"t":1,"type":"insert","pos":0,"text":"hi"}]}').kind, 'submission');
   const revs = parseImport(JSON.stringify({ title: 'Essay', revisions: [{ time: '2026-09-22T09:00:00Z', content: 'a' }, { time: '2026-09-22T09:05:00Z', content: 'a b' }] }));
@@ -130,4 +99,9 @@ test('JSON import is forgiving and explains failures', () => {
 test('table layout: a row of labels followed by a row of values', () => {
   const r = parseProcessReport('Writing time Sessions Edits Pastes\n1h 12m 3 1,284 2\nOther text');
   assert.deepEqual(r.metrics, { writingMinutes: 72, sessions: 3, edits: 1284, pasteCount: 2 });
+});
+
+test('reads paragraphs from Word document XML', () => {
+  const xml = '<w:document><w:body><w:p><w:r><w:t>First &amp; foremost</w:t></w:r><w:r><w:t xml:space="preserve"> line.</w:t></w:r></w:p><w:p><w:r><w:t>Second</w:t></w:r></w:p></w:body></w:document>';
+  assert.equal(docxXmlToText(xml), 'First & foremost line.\nSecond');
 });

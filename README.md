@@ -1,63 +1,74 @@
-# Writing Process Review
+# Writing Profiles
 
-A teacher-facing tool that highlights **unusual writing-process and textual patterns that may be worth a closer look**.
+A classroom tool that helps teachers answer one question:
 
-It is **not** an AI detector. It never gives an "AI probability", never labels writing as AI-generated and never decides whether a student cheated. Every flag shows the evidence behind it and other possible explanations, and you can dismiss it or add a note.
+> **How unusual is this piece of writing for this particular student?**
+
+It compares a new piece with the student's **own earlier writing and writing process**, across three kinds of evidence:
+- **authorship fingerprint:** style
+- **argument and discourse:** how ideas are built
+- **composition process:** how the document was written, and whether text arrived in large blocks
+
+It is **not an AI detector**:
+- It never produces an AI probability, never says a text was written by AI, and never decides whether a student cheated.
+- It detects *that something is unusual*, not *why*.
+
+Every report states: *An anomaly is not evidence of misconduct.*
 
 ## Opening the app
 
-The app is a set of plain web files (HTML, CSS, JavaScript). It needs no installation and has no server or accounts.
+It is a plain website: no installation, no accounts, no server.
 
-* **On the website:** once this folder is on GitHub Pages, open `…/writing-review/`.
-* **On your own computer:** browsers block this kind of app when you double-click the file. In a terminal, from this folder, run:
+* **GitHub Pages:** Settings → Pages → Deploy from branch → `main` / root. Then open `https://<your-username>.github.io/writingreview/`.
+* **On your computer:** run `python3 -m http.server 8000` in this folder, then visit <http://localhost:8000>. Double-clicking `index.html` does not work, because browsers block it.
 
-  ```
-  python3 -m http.server 8000
-  ```
+The app opens with a **fictional demo class** of four students. Each one shows a situation the tool must handle responsibly:
 
-  Then visit <http://localhost:8000>.
+| Student | Situation | What the tool says |
+|---|---|---|
+| S-1042 | Six earlier samples. The new essay shows sudden shifts in vocabulary, syntax and argument, a long unrevised stretch, and a 275-word block inserted at once | Investigation priority **HIGH** |
+| S-2217 | A consistently sophisticated writer | **LOW**: typical for this student |
+| S-3308 | Writing has become steadily more sophisticated over a year | **LOW**: recognised as development, not flagged |
+| S-4410 | Only one earlier sample | **INCONCLUSIVE**: insufficient baseline |
 
-The first time it opens, it loads **fictional demo data** for three invented students, so you can explore:
+## Using it with your class
 
-| Demo student | What it shows |
-|---|---|
-| Sam Rivera | Typed introduction, then a 395-word paste of very formulaic prose that differs from Sam's three earlier essays. Result: **Review recommended**. |
-| Avery Chen | Typed steadily, with normal revisions. The one paste was a quotation, so it is downgraded. Result: **No notable patterns**. |
-| Jordan Price | Text only: no process log and no baseline. Formulaic phrasing is noted, but on its own it can never reach "Review recommended". |
+1. **Build profiles.** *Add writing → Baseline writing*.
+   * Upload `.docx` (Google Docs: File → Download → .docx), `.pdf` or `.txt` files, or paste text.
+   * Use work you consider authentic and representative, such as in-class writing.
+   * **3 samples is the minimum; 5–10 is better.**
+2. **Add a piece to review.**
+   * First answer the assignment-context questions: genre, timed, research, notes, AI or collaboration allowed, sentence frames, model essay, and vocabulary you taught.
+   * Optionally attach process data: a Google Docs add-on report (PDF), a revision-history export (JSON), or a log from `capture.html`.
+3. **Investigate.** The piece's page has these tabs:
+   * **Overview:** the anomaly profile, strongest deviations, profile comparison and suggested follow-up questions
+   * **Evidence:** every finding, with evidence quality, historical support and alternative explanations; you can mark each one reviewed or dismissed, or add a note
+   * **Side by side:** earlier vs. current writing, with explained highlights
+   * **Argument map**
+   * **Process timeline**
+   * **Statistics**
+4. **Talk with the student.** *Conference mode* shows a neutral, student-facing view.
+5. **Report.** A concise printable report, which can also be copied as text.
+6. **Keep the profile current.** After review, *Add to student profile* makes the piece part of the baseline, so genuine development stops being flagged.
 
-You can reset or clear the demo data under **Settings**.
+## Privacy
 
-## Using it with real students
-
-1. **Build a baseline.** Under *Students & baselines*, add writing you know the student produced themselves (for example, in-class essays). Three or more samples give an *established* baseline.
-2. **Collect writing-process data (optional but valuable).** Either:
-   * **Process report PDF** from a Google Docs add-on (for example Revision History, Process Feedback, Draftback or Brisk). Download the student's report as a PDF.
-   * **Writing capture:** students write in `capture.html`, which records typing, deleting and pasting, and tells students clearly that this is recorded. They download the log (JSON) and hand it in.
-3. **Add the submission.** Under *Add submission*:
-   1. Attach the PDF or JSON file.
-   2. **Check the figures** the app read from it: writing time, sessions, edits and each paste with its excerpt. Correct anything that was misread.
-   3. Paste the student's final text (copy it from the Google Doc), since reports usually contain only excerpts.
-
-   To see how it works, try `examples/sample-process-report.pdf` (fictional).
-4. **Review.**
-   * Open the submission.
-   * Click each signal to see its observed evidence, the student's baseline, an interpretation, other explanations and the rule that set its severity.
-   * Mark signals as reviewed or dismissed, and add notes.
-5. **Report.** *Teacher report* produces a concise, printable summary.
-
-Everything is stored **only in your browser** (localStorage). Use *Settings → Export* to back up your data or move it to another computer.
+* All analysis runs in the browser. Student writing is never sent anywhere, and no external AI service is used.
+* Data is stored only in this browser. You can also turn on a **passphrase lock** that encrypts it.
+* Students are identified by ID; names are optional and can be hidden.
+* You can delete a student's entire profile, or all data, at any time.
 
 ## Files
 
 | Path | Purpose |
 |---|---|
-| `DESIGN.md` | Architecture, data model, event schema, pipeline, baseline method, severity rules, safeguards |
-| `index.html` | Teacher dashboard |
-| `capture.html` | Writing-capture editor |
-| `js/config.js` | Every threshold (also editable in *Settings*) |
-| `js/text/`, `js/process/`, `js/baseline/` | Detectors, grouped by the kind of evidence they use |
-| `js/pipeline/registry.js` | The list of detectors. Add new signals here. |
-| `js/import/` | Reading PDF process reports and other tools' JSON exports |
-| `vendor/pdfjs/` | PDF reader (Mozilla pdf.js 3.11, Apache 2.0 licence), included so nothing is loaded from other servers |
-| `examples/` | A fictional sample process report PDF |
-| `tests/` | Automated tests (`npm test`, needs Node 18+) |
+| `DESIGN.md` | Method, data model, statistics, safeguards |
+| `js/features/` | Stylometry, discourse and process features |
+| `js/profile/` | Genre-weighted student baseline, sufficiency, trends |
+| `js/analysis/` | Comparison, anomaly profile, follow-up questions |
+| `js/import/` | .docx, PDF, process reports and JSON imports |
+| `js/ui/` | Teacher interface |
+| `capture.html` | Writing editor that records the writing process (students are told) |
+| `vendor/pdfjs/` | PDF reader (Mozilla pdf.js, Apache 2.0) |
+| `examples/` | A fictional sample process-report PDF |
+| `tests/` | Automated tests: `npm test` (Node 18+) |

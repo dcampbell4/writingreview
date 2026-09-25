@@ -3,39 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Writing Process Review</title>
-<meta name="description" content="A teacher decision-support tool that surfaces unusual writing-process and textual patterns for review. It does not detect AI or determine how a text was produced.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Writing Profiles</title>
+<meta name="description" content="A teacher investigation notebook: how unusual is this piece of writing for this particular student? Combines authorship fingerprinting, argument analysis and writing-process evidence. Not an AI detector.">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="#/"><span class="brand-mark" aria-hidden="true"></span>Writing Process Review</a>
+    <a class="brand" href="#/">Writing Profiles</a>
     <nav class="nav" aria-label="Main">
-      <a href="#/" data-nav="dashboard">Submissions</a>
-      <a href="#/students" data-nav="students">Students &amp; baselines</a>
-      <a href="#/new" data-nav="new">Add submission</a>
+      <a href="#/" data-nav="class">Class</a>
+      <a href="#/students" data-nav="students">Students</a>
+      <a href="#/add" data-nav="add">Add writing</a>
+      <a href="#/assignments" data-nav="assignments">Assignments</a>
       <a href="#/settings" data-nav="settings">Settings</a>
+      <a href="#/privacy" data-nav="privacy">Privacy</a>
       <a href="#/about" data-nav="about">How it works</a>
     </nav>
-    <span class="topbar-spacer"></span>
-    <a class="btn btn-sm" href="capture.html" target="_blank" rel="noopener">Open writing capture</a>
+    <span class="spacer"></span>
+    <a class="btn btn-sm" href="capture.html" target="_blank" rel="noopener">Writing capture</a>
   </div>
 </header>
 <main class="main" id="app" tabindex="-1">
   <noscript><p class="notice">This tool needs JavaScript.</p></noscript>
-  <p class="notice notice-info" id="boot-msg">Loading…</p>
+  <p class="notice" id="boot">Loading…</p>
 </main>
-<p class="footer-note">A decision-support tool: it identifies unusual patterns for teacher review. It does not detect AI, produce probabilities or determine how a text was produced. All data stays in this browser.</p>
+<p class="footer">An investigation aid, not a verdict. It describes how unusual a piece of writing is for a particular student; it cannot establish how a text was produced and never estimates AI use. All data stays in this browser.</p>
 <script type="module" src="js/ui/app.js"></script>
 <script>
-  // Opening this file directly from disk blocks JavaScript modules in most browsers.
-  if (location.protocol === 'file:') {
-    document.getElementById('boot-msg').innerHTML = 'Browsers block this app when it is opened directly from a file. Open it from the website (GitHub Pages) or run a local server; see README.md.';
-  }
+  if (location.protocol === 'file:') document.getElementById('boot').textContent = 'Browsers block this app when it is opened directly from a file. Open it from the website (GitHub Pages) or run a local server (see README.md).';
 </script>
 </body>
 </html>

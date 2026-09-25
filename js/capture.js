@@ -101,12 +101,14 @@ document.getElementById('c-finish').addEventListener('click', () => {
 
 document.getElementById('c-add').addEventListener('click', async () => {
   const store = await import('./store.js');
-  store.init();
+  if (store.init() === 'locked') { alert('The review tool on this device is locked with a passphrase. Download the log and import it from the review tool instead.'); return; }
   const log = finalLog();
-  const student = store.findOrCreateStudent(log.student);
-  const id = `sub-${Date.now().toString(36)}`;
-  store.upsert('submissions', { id, studentId: student.id, assignment: log.assignment, date: log.date, finalText: log.finalText, log: { startedAt: log.startedAt, events: log.events }, assignmentTerms: [] });
-  location.href = `index.html#/submission/${id}`;
+  const name = log.student.trim();
+  let student = store.students().find((s) => s.displayName?.toLowerCase() === name.toLowerCase() || s.id.toLowerCase() === name.toLowerCase());
+  if (!student) student = store.saveStudent({ id: store.nextStudentId(), displayName: name, context: {}, notes: '' });
+  const id = store.newId('smp');
+  store.saveSample({ id, student_id: student.id, assignment_id: null, role: 'current', title: log.assignment, timestamp: log.date, genre: 'Other', subject: '', assignment_type: '', timed: false, text: log.finalText, process_data: { log: { startedAt: log.startedAt, events: log.events } }, include: true, authentic: true });
+  location.href = `index.html#/add?sample=${encodeURIComponent(id)}`;
 });
 
 document.getElementById('c-reset').addEventListener('click', () => {

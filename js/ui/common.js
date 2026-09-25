@@ -1,86 +1,105 @@
-// Shared UI helpers and the analysis cache.
+// Shared UI helpers: running analyses, level display, small widgets.
 
 import * as store from '../store.js';
-import { analyzeSubmission, summarize, STATUS } from '../pipeline/analyze.js';
+import { analyze } from '../analysis/run.js';
 import { escapeHtml as h } from '../util.js';
 
-let dataVersion = 0;
+let version = 0;
 const cache = new Map();
+store.onChange(() => { version++; });
 
-export function invalidate() { dataVersion++; cache.clear(); }
-
-// Runs (or reuses) the analysis for one submission and applies the current annotations.
-export function getAnalysis(submissionId) {
-  const sub = store.submission(submissionId);
-  if (!sub) return null;
-  let entry = cache.get(submissionId);
-  if (!entry || entry.version !== dataVersion) {
-    const config = store.getConfig();
-    const result = analyzeSubmission({
-      submission: sub,
-      student: store.student(sub.studentId),
-      samples: store.samplesFor(sub.studentId),
-      config,
-      annotations: store.annotationsFor(sub.id),
-    });
-    entry = { version: dataVersion, result, config };
-    cache.set(submissionId, entry);
-  }
-  // Annotations can change without re-running detectors.
-  const ann = store.annotationsFor(sub.id);
-  for (const s of entry.result.signals) {
-    s.status = ann[s.id]?.status || 'open';
-    s.note = ann[s.id]?.note || '';
-  }
-  entry.result.summary = summarize(entry.result.signals, { rep: entry.result.replay, report: entry.result.report, baseline: entry.result.baseline, config: entry.config, doc: entry.result.doc });
-  return entry.result;
+export function resultFor(sampleId) {
+  const smp = store.sample(sampleId);
+  if (!smp) return null;
+  const hit = cache.get(sampleId);
+  if (hit && hit.version === version) return hit.result;
+  const ann = store.annotations(sampleId);
+  const dismissed = new Set(Object.entries(ann).filter(([, a]) => a.status === 'dismissed').map(([k]) => k));
+  const assignmentsById = Object.fromEntries(store.assignments().map((a) => [a.id, a]));
+  const result = analyze({
+    sample: smp,
+    student: store.student(smp.student_id),
+    baseline: store.baselineFor(smp),
+    assignment: smp.assignment_id ? store.assignment(smp.assignment_id) : null,
+    assignmentsById,
+    config: store.config(),
+    dismissed,
+  });
+  cache.set(sampleId, { version, result });
+  return result;
 }
 
-export const sevBadge = (sev) => sev ? `<span class="sev sev-${sev}">${h(sev)}</span>` : '<span class="sev sev-none">None</span>';
-
-export function statusBadge(status) {
-  const cls = status === STATUS.review ? 'status-review' : status === STATUS.some ? 'status-some' : 'status-none';
-  return `<span class="status ${cls}">${h(status)}</span>`;
+export function levelHtml(level, segments) {
+  if (level === 'NOT ASSESSED' || level == null) return '<span class="level na"><span class="word">Not assessed</span></span>';
+  const on = segments ?? { LOW: 2, MODERATE: 4, 'MODERATE-HIGH': 6, HIGH: 8, 'VERY HIGH': 10 }[level] ?? 0;
+  return `<span class="level">${barHtml(on)}<span class="word">${h(level)}</span></span>`;
 }
 
-export function teacherStatus(result) {
-  const reviewed = result.signals.filter((s) => s.status !== 'open').length;
-  if (!result.signals.length) return '<span class="muted">—</span>';
-  if (reviewed === result.signals.length) return '<span class="tag">All signals reviewed</span>';
-  if (reviewed) return `<span class="tag">${reviewed} of ${result.signals.length} reviewed</span>`;
-  return '<span class="muted small">Not reviewed</span>';
+// Ten blocks; the level is always also written in words next to it.
+export const barHtml = (on) => `<span class="blocks" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('')}</span>`;
+
+export const priorityHtml = (p) => `<span class="priority p-${h(p.replace(/\s/g, '-'))}">${h(p)}</span>`;
+
+export function toast(msg) {
+  let el = document.getElementById('toast');
+  if (!el) { el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
 }
 
-export function download(filename, text, type = 'application/json') {
-  const blob = new Blob([text], { type });
+export function download(name, text, type = 'application/json') {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 
-export function readFile(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = () => reject(r.error);
-    r.readAsText(file);
-  });
+export const nameOf = (student) => h(store.displayName(student));
+
+export function contextSummary(smp, a) {
+  const bits = [smp.genre, smp.assignment_type && smp.assignment_type !== smp.genre ? smp.assignment_type : null, smp.subject, smp.timed ? 'timed' : 'untimed'];
+  if (a) {
+    if (a.inClass) bits.push('in class');
+    if (a.researchAllowed) bits.push('research allowed');
+    if (a.notesAllowed) bits.push('notes allowed');
+    if (a.collaborationAllowed) bits.push('collaboration allowed');
+    if (a.aiAllowed) bits.push('AI use permitted');
+    if (a.sentenceFrames) bits.push('sentence frames given');
+    if (a.modelEssay) bits.push('model essay studied');
+  }
+  return bits.filter(Boolean).join(' · ');
 }
 
-export function toast(message) {
-  let el = document.getElementById('toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'toast';
-    el.setAttribute('role', 'status');
-    el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:8px 16px;border-radius:6px;font-size:14px;z-index:50;transition:opacity .2s';
-    document.body.appendChild(el);
-  }
-  el.textContent = message;
-  el.style.opacity = '1';
-  clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2200);
+// Renders text with highlighted character ranges. `spans`: [{start, end, cls, title, prefix}]
+export function highlightText(text, spans = [], paragraphs = null) {
+  const sorted = [...spans].filter((s) => s.end > s.start).sort((a, b) => a.start - b.start || b.end - a.end);
+  const paras = paragraphs || text.split(/\n/).reduce((acc, line) => {
+    const start = acc.pos;
+    acc.pos += line.length + 1;
+    if (line.trim()) acc.list.push({ start, end: start + line.length });
+    return acc;
+  }, { pos: 0, list: [] }).list;
+  return paras.map((p) => {
+    let html = '';
+    let pos = p.start;
+    const inside = sorted.filter((s) => s.end > p.start && s.start < p.end);
+    let lastEnd = p.start;
+    for (const s of inside) {
+      const a = Math.max(s.start, lastEnd, p.start);
+      const b = Math.min(s.end, p.end);
+      if (b <= a) continue;
+      html += h(text.slice(pos, a));
+      html += s.nomark
+        ? `${s.prefix || ''}<span${s.cls ? ` class="${h(s.cls)}"` : ''}${s.title ? ` title="${h(s.title)}"` : ''}>${h(text.slice(a, b))}</span>`
+        : `${s.prefix || ''}<mark class="${h(s.cls || '')}"${s.title ? ` title="${h(s.title)}"` : ''}>${h(text.slice(a, b))}</mark>`;
+      pos = b;
+      lastEnd = b;
+    }
+    html += h(text.slice(pos, p.end));
+    return `<p>${html}</p>`;
+  }).join('');
 }
